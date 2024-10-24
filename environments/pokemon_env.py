@@ -80,6 +80,16 @@ class PokemonRLEnv(Player):
         self.current_battle = None
         self.last_reward = 0
         return np.zeros(self.observation_space.shape)
+    
+    def choose_move(self, battle: AbstractBattle, order: BattleOrder) -> BattleOrder:
+        # Here we implement a simple logic to choose a move or switch based on the order
+        if battle.available_moves and order.move in battle.available_moves:
+            return order
+        elif battle.available_switches and order.pokemon in battle.available_switches:
+            return order
+        else:
+            # Fallback to the first available move if the selected move is invalid
+            return BattleOrder(battle.available_moves[0] if battle.available_moves else None)
 
     def step(self, action: int) -> Tuple[np.ndarray, float, bool, Dict]:
         if action < 4:  # Moves
