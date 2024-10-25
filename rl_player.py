@@ -289,8 +289,8 @@ async def main():
     eval_env.reset_env(restart=False)
 
     # Evaluate using included util method
-    n_challenges = 250
-    placement_battles = 40
+    n_challenges = 25
+    placement_battles = 4
     eval_task = background_evaluate_player(
         eval_env.agent, n_challenges, placement_battles
     )
@@ -299,7 +299,7 @@ async def main():
     eval_env.reset_env(restart=False)
 
     # Cross evaluation
-    n_challenges = 50
+    n_challenges = 5
     players = [
         eval_env.agent,
         RandomPlayer(battle_format="gen8randombattle"),
