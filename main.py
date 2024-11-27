@@ -2,27 +2,54 @@ from poke_env import RandomPlayer
 from poke_env.data import GenData
 from poke_env import AccountConfiguration
 from poke_env import cross_evaluate
-import max_damage as md
 from gymnasium.utils.env_checker import check_env
-# from rl_player import RLPlayer
-
-# The RandomPlayer is a basic agent that makes decisions randomly,
-# serving as a starting point for more complex agent development.
-
-# The battle_against method initiates a battle between two players.
-# Here we are using asynchronous programming (await) to start the battle.
+from agent import DQNAgent
+from environment import SimpleRLPlayer
 import asyncio
+import os
 
 async def main():
-    # my_account_config1 = AccountConfiguration("my_username_123", None)
-    # my_account_config2 = AccountConfiguration("my_username_12345", None)
+    # Initialize environment and opponent
+    opponent = RandomPlayer(battle_format="gen8randombattle")
+    env = SimpleRLPlayer(
+        battle_format="gen8randombattle",
+        opponent=opponent,
+        start_challenging=True
+    )
     
-    random_player = RandomPlayer(battle_format="gen8randombattle")
-    random_player2 = RandomPlayer(battle_format="gen8randombattle")
-    # rl_player = RLPlayer(battle_format="gen8randombattle", opponent=random_player)
-
-
-    await random_player.battle_against(random_player2, n_battles=1)
+    # Initialize or load the agent
+    model_path = 'saved_models/dqn_model.pth'
+    if os.path.exists(model_path):
+        print("Loading pre-trained model...")
+        agent = DQNAgent.load(model_path)
+    else:
+        print("No pre-trained model found. Initializing new agent...")
+        state_shape = env.observation_space.shape
+        n_actions = env.action_space.n
+        agent = DQNAgent(state_shape, n_actions)
+    
+    # Run a test battle
+    n_battles = 1
+    total_rewards = 0
+    
+    for _ in range(n_battles):
+        state = env.reset()[0]
+        done = False
+        while not done:
+            action = agent.get_action(state, training=False)
+            state, reward, terminated, truncated, _ = env.step(action)
+            done = terminated or truncated
+            total_rewards += reward
+    
+    print(f"Average reward over {n_battles} battles: {total_rewards/n_battles}")
+    print(f"Won {env.n_won_battles} out of {env.n_finished_battles} battles")
+    
+    env.close()
 
 if __name__ == "__main__":
-        asyncio.get_event_loop().run_until_complete(main())
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    try:
+        loop.run_until_complete(main())
+    finally:
+        loop.close()
