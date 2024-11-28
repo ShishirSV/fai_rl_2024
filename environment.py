@@ -1,19 +1,12 @@
 import numpy as np
-import random
 from gymnasium.spaces import Box
 from poke_env.environment.abstract_battle import AbstractBattle
 from poke_env.player import Gen8EnvSinglePlayer
 from poke_env.data import GenData
+from custom_battle import CustomBattle
+import random
 
-class CustomBattle(AbstractBattle):
-    def parse_message(self, split_message):
-        """Override parse_message to handle 'sentchoice' messages"""
-        if len(split_message) > 1 and split_message[1] == 'sentchoice':
-            # Ignore sentchoice messages as they don't affect the battle state
-            return
-        return super().parse_message(split_message)
-
-class SimpleRLPlayer(Gen8EnvSinglePlayer):
+class ImprovedRLPlayer(Gen8EnvSinglePlayer):
     def create_battle(self):
         """Override to use CustomBattle instead of the default battle class"""
         return CustomBattle(
@@ -21,10 +14,13 @@ class SimpleRLPlayer(Gen8EnvSinglePlayer):
             username=self.username,
             logger=self.logger,
         )
-    
+
     def calc_reward(self, last_battle, current_battle) -> float:
         return self.reward_computing_helper(
-            current_battle, fainted_value=2.0, hp_value=1.0, victory_value=30.0
+            current_battle, 
+            fainted_value=2.0, 
+            hp_value=1.0, 
+            victory_value=30.0
         )
 
     def embed_battle(self, battle: AbstractBattle):
@@ -39,25 +35,40 @@ class SimpleRLPlayer(Gen8EnvSinglePlayer):
                     type_chart=GenData.from_gen(8).type_chart
                 )
 
+        # Pokemon HP
+        active_pokemon_hp = battle.active_pokemon.current_hp_fraction
+        opponent_hp = battle.opponent_active_pokemon.current_hp_fraction
+        
+        # Status conditions
+        status_conditions = np.zeros(6)
+        if battle.opponent_active_pokemon.status:
+            status_mapping = {
+                'slp': 0, 'psn': 1, 'brn': 2,
+                'frz': 3, 'par': 4, 'tox': 5
+            }
+            status = battle.opponent_active_pokemon.status.value
+            if status in status_mapping:
+                status_conditions[status_mapping[status]] = 1
+        
+        # Team statistics
         fainted_mon_team = len([mon for mon in battle.team.values() if mon.fainted]) / 6
-        fainted_mon_opponent = (
-            len([mon for mon in battle.opponent_team.values() if mon.fainted]) / 6
-        )
-
-        final_vector = np.concatenate(
-            [
-                moves_base_power,
-                moves_dmg_multiplier,
-                [fainted_mon_team, fainted_mon_opponent],
-            ]
-        )
+        fainted_mon_opponent = len([mon for mon in battle.opponent_team.values() if mon.fainted]) / 6
+        
+        final_vector = np.concatenate([
+            moves_base_power,
+            moves_dmg_multiplier,
+            [active_pokemon_hp, opponent_hp],
+            status_conditions,
+            [fainted_mon_team, fainted_mon_opponent],
+        ])
+        
         return np.float32(final_vector)
 
     def describe_embedding(self) -> Box:
-        low = [-1, -1, -1, -1, 0, 0, 0, 0, 0, 0]
-        high = [3, 3, 3, 3, 4, 4, 4, 4, 1, 1]
+        n_features = 4 + 4 + 2 + 6 + 2  # Moves power, multiplier, HPs, status, fainted
         return Box(
-            np.array(low, dtype=np.float32),
-            np.array(high, dtype=np.float32),
-            dtype=np.float32,
+            low=-1.0,
+            high=4.0,
+            shape=(n_features,),
+            dtype=np.float32
         )

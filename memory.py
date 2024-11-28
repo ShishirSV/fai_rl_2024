@@ -12,6 +12,7 @@ class ReplayMemory:
     
     def sample(self, batch_size):
         batch = random.sample(self.memory, batch_size)
+        # Convert batch of tuples to tuple of arrays
         states, actions, rewards, next_states, dones = zip(*batch)
         
         # Convert to numpy arrays first

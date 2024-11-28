@@ -3,7 +3,7 @@ import torch
 import torch.optim as optim
 import torch.nn as nn
 import os
-from models import DQN
+from models import DuelingDQN as DQN
 from memory import ReplayMemory
 
 class DQNAgent:
@@ -11,13 +11,13 @@ class DQNAgent:
         self,
         state_shape,
         n_actions,
-        gamma=0.5,
+        gamma=0.99,
         epsilon_start=1.0,
-        epsilon_final=0.05,
-        epsilon_decay=10000,
-        memory_size=10000,
+        epsilon_final=0.01,
+        epsilon_decay=100000,
+        memory_size=100000,
         batch_size=32,
-        learning_rate=0.00025,
+        learning_rate=0.0001,
     ):
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.n_actions = n_actions
@@ -27,13 +27,14 @@ class DQNAgent:
         self.epsilon_decay = epsilon_decay
         self.batch_size = batch_size
         self.steps = 0
-        self.state_shape = state_shape  # Store for model loading
+        self.state_shape = state_shape
         
         # Networks
         self.policy_net = DQN(state_shape, n_actions).to(self.device)
         self.target_net = DQN(state_shape, n_actions).to(self.device)
         self.target_net.load_state_dict(self.policy_net.state_dict())
         
+        # Simple replay memory
         self.memory = ReplayMemory(memory_size)
         self.optimizer = optim.Adam(self.policy_net.parameters(), lr=learning_rate)
     
@@ -72,9 +73,9 @@ class DQNAgent:
         
         self.optimizer.zero_grad()
         loss.backward()
+        torch.nn.utils.clip_grad_norm_(self.policy_net.parameters(), max_norm=1.0)
         self.optimizer.step()
         
-        # Update target network
         if self.steps % 1000 == 0:
             self.target_net.load_state_dict(self.policy_net.state_dict())
         
@@ -82,10 +83,7 @@ class DQNAgent:
         self.update_epsilon()
 
     def save(self, path='saved_models'):
-        """Save the trained model and training state"""
         os.makedirs(path, exist_ok=True)
-        
-        # Save model parameters and training state
         state = {
             'policy_net_state_dict': self.policy_net.state_dict(),
             'target_net_state_dict': self.target_net.state_dict(),
@@ -99,20 +97,15 @@ class DQNAgent:
     
     @classmethod
     def load(cls, path='saved_models/dqn_model.pth'):
-        """Load a trained model and return a new agent instance"""
         if not os.path.exists(path):
             raise FileNotFoundError(f"No saved model found at {path}")
             
-        # Load the saved state
         state = torch.load(path)
-        
-        # Create a new agent instance
         agent = cls(
             state_shape=state['state_shape'],
             n_actions=state['n_actions']
         )
         
-        # Load the saved parameters
         agent.policy_net.load_state_dict(state['policy_net_state_dict'])
         agent.target_net.load_state_dict(state['target_net_state_dict'])
         agent.optimizer.load_state_dict(state['optimizer_state_dict'])
