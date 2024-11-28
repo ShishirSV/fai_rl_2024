@@ -18,7 +18,7 @@ async def main():
     )
     
     # Initialize or load the agent
-    model_path = 'saved_models/dqn_model.pth'
+    model_path = 'saved_models/dqn_model_final.pth'
     if os.path.exists(model_path):
         print("Loading pre-trained model...")
         agent = DQNAgent.load(model_path)
