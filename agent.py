@@ -11,13 +11,13 @@ class DQNAgent:
         self,
         state_shape,
         n_actions,
-        gamma=0.5,
+        gamma=0.99,
         epsilon_start=1.0,
-        epsilon_final=0.05,
-        epsilon_decay=10000,
-        memory_size=10000,
+        epsilon_final=0.01,
+        epsilon_decay=50000,
+        memory_size=100000,
         batch_size=32,
-        learning_rate=0.00025,
+        learning_rate=0.00001,
     ):
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.n_actions = n_actions

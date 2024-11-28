@@ -5,18 +5,16 @@ from poke_env.environment.abstract_battle import AbstractBattle
 from poke_env.player import Gen8EnvSinglePlayer
 from poke_env.data import GenData
 
-class CustomBattle(AbstractBattle):
-    def parse_message(self, split_message):
-        """Override parse_message to handle 'sentchoice' messages"""
-        if len(split_message) > 1 and split_message[1] == 'sentchoice':
-            # Ignore sentchoice messages as they don't affect the battle state
-            return
-        return super().parse_message(split_message)
-
 class SimpleRLPlayer(Gen8EnvSinglePlayer):
+    def _handle_battle_message(self, split_message):
+        """Override to handle 'sentchoice' messages at the player level"""
+        if len(split_message) > 1 and split_message[1] == 'sentchoice':
+            return
+        return super()._handle_battle_message(split_message)
+
     def create_battle(self):
-        """Override to use CustomBattle instead of the default battle class"""
-        return CustomBattle(
+        """Create a battle instance"""
+        return AbstractBattle(
             battle_tag=f"battle_{random.randrange(0x100000000):08x}",
             username=self.username,
             logger=self.logger,

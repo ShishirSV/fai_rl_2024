@@ -61,7 +61,7 @@ async def main():
 
     # Training
     print("Training DQN agent...")
-    await train_dqn(train_env, agent, n_steps=10)
+    await train_dqn(train_env, agent, n_steps=100000)
 
     # Save the trained model
     print("Saving trained model...")
@@ -71,7 +71,7 @@ async def main():
 
     # Evaluation
     print("Results against random player:")
-    await test_dqn(eval_env, agent, n_episodes=1)
+    await test_dqn(eval_env, agent, n_episodes=100)
     print(
         f"DQN Evaluation: {eval_env.n_won_battles} victories out of {eval_env.n_finished_battles} episodes"
     )
