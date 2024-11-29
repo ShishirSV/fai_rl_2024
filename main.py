@@ -13,8 +13,8 @@ from rl_player import SimpleRLPlayer
 # The battle_against method initiates a battle between two players.
 # Here we are using asynchronous programming (await) to start the battle.
 import asyncio
-import logging
-logging.basicConfig(level=logging.DEBUG)
+# import logging
+# logging.basicConfig(level=logging.DEBUG)
 
 
 async def main():
