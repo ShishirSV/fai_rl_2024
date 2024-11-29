@@ -1,4 +1,5 @@
 from poke_env import RandomPlayer
+# from poke_env.player.random_player import RandomPlayer
 from poke_env.data import GenData
 from poke_env import AccountConfiguration
 from poke_env import cross_evaluate
@@ -12,9 +13,12 @@ from rl_player import SimpleRLPlayer
 # The battle_against method initiates a battle between two players.
 # Here we are using asynchronous programming (await) to start the battle.
 import asyncio
+import logging
+logging.basicConfig(level=logging.DEBUG)
+
 
 async def main():
-    my_account_config1 = AccountConfiguration("my_username_123", None)
+    # my_account_config1 = AccountConfiguration("my_username_123", None)
     # my_account_config2 = AccountConfiguration("my_username_12345", None)
     
     random_player = RandomPlayer(battle_format="gen8randombattle")
